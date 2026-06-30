@@ -1,0 +1,33 @@
+name: Update newsletter
+on:
+  schedule:
+    - cron: '0 8,20 * * *' # runs at 08:00 and 20:00 UTC daily
+  workflow_dispatch: # lets you click a button to test it manually
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Fetch email and generate HTML
+        env:
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+        run: python fetch_newsletter.py
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add index.html
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Automated newsletter update" && git push)
