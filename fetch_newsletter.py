@@ -39,15 +39,15 @@ if email_ids:
                     if cid:
                         cid = cid.strip("<>") 
 
-                        ext = part.get_content_subtype()
-                        filename = part.get_filename() or f"{cid}.{ext}"
+                        ext = part.get_content_subtype() or "png"
+                        filename = f"{cid}.{ext}" 
                         filepath = os.path.join("images", filename)
                         
                         # Save the image file locally to images/
                         with open(filepath, "wb") as img_file:
                             img_file.write(part.get_payload(decode=True))
                         
-                        # Store the relative path for the HTML replacement
+                        # Store the relative path for the HTML replacement/insertion
                         inline_images[cid] = f"images/{filename}"
 
             if html_content:
