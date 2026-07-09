@@ -15,7 +15,7 @@ def get_unread_emails(mail):
                 from_header = str(msg.get("From", ""))
                 
                 # Looks for our domain in the FROM header
-                if "@pingpongnyc.org" in from_header.lower():
+                if "@pingpongnyc.org" in from_header.lower() or "nolangcyr@gmail.com" in from_header.lower():
                     return [e_id] 
                     
     return []
