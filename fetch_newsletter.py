@@ -3,25 +3,8 @@ import imaplib
 import email
 
 def get_unread_emails(mail):
-    status, messages = mail.search(None, "UNSEEN")
-    email_ids = messages[0].split()
-
-    print(f"DEBUG: Found {len(email_ids)} total unread emails in inbox.")
-
-    for e_id in reversed(email_ids):
-        status, data = mail.fetch(e_id, '(BODY[HEADER.FIELDS (FROM)])')
-        
-        for response_part in data:
-            if isinstance(response_part, tuple):
-                msg = email.message_from_bytes(response_part[1])
-                from_header = str(msg.get("From", ""))
-                
-                print(f"DEBUG: Checking unread email ID {e_id.decode()} from sender: {from_header}")
-                
-                if "@pingpongnyc.org" in from_header.lower() or "nolangcyr@gmail.com" in from_header.lower():
-                    return [e_id] 
-                    
-    return []
+    status, messages = mail.search(None, "UNSEEN") # search only for UNSEEN (unread) emails
+    return messages[0].split() if messages[0] else []
 
 def parse_email_and_save(msg):
     html_content = None
