@@ -6,15 +6,18 @@ def get_unread_emails(mail):
     status, messages = mail.search(None, "UNSEEN")
     email_ids = messages[0].split()
 
+    print(f"DEBUG: Found {len(email_ids)} total unread emails in inbox.")
+
     for e_id in reversed(email_ids):
-        status, data = mail.fetch(e_id, '(BODY[HEADER.FIELDS (FROM)])') # get the FROM field in the unread email header
+        status, data = mail.fetch(e_id, '(BODY[HEADER.FIELDS (FROM)])')
         
         for response_part in data:
             if isinstance(response_part, tuple):
                 msg = email.message_from_bytes(response_part[1])
                 from_header = str(msg.get("From", ""))
                 
-                # Looks for our domain in the FROM header
+                print(f"DEBUG: Checking unread email ID {e_id.decode()} from sender: {from_header}")
+                
                 if "@pingpongnyc.org" in from_header.lower() or "nolangcyr@gmail.com" in from_header.lower():
                     return [e_id] 
                     
