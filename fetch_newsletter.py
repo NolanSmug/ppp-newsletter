@@ -1,10 +1,29 @@
 import os
+import re
 import imaplib
 import email
 
 def get_unread_emails(mail):
-    status, messages = mail.search(None, "UNSEEN") # search only for UNSEEN (unread) emails
-    return messages[0].split() if messages[0] else []
+    status, messages = mail.search(None, "UNSEEN")
+    email_ids = messages[0].split() if messages[0] else []
+
+    # The list of ALLOWED_SENDERS is accessible on the GitHub repository: 
+    # Settings > Secrets and Variables > Actions: Repository secrets > ALLOWED_SENDERS
+    allowed_senders = os.environ.get("ALLOWED_SENDERS", "").lower().replace(" ", "").split(",")
+
+    for e_id in reversed(email_ids):
+        status, data = mail.fetch(e_id, '(BODY[HEADER.FIELDS (FROM)])')
+        
+        for response_part in data:
+            if isinstance(response_part, tuple):
+                msg = email.message_from_bytes(response_part[1])
+                from_header = str(msg.get("From", "")).lower()
+                
+                if any(sender in from_header for sender in allowed_senders if sender):
+                    return [e_id] 
+                    
+    return []
+
 
 def parse_email_and_save(msg):
     html_content = None
@@ -16,6 +35,13 @@ def parse_email_and_save(msg):
 
         if content_type == "text/html":
             html_content = part.get_payload(decode=True).decode('utf-8', errors='ignore')
+            
+            # Remove Gmail forwarding headers
+            html_content = re.sub(r'<div[^>]*class="gmail_attr"[^>]*>.*?(?:Forwarded message|From:).*?</div>(?:\s*<br>\s*)*', '', html_content, flags=re.DOTALL | re.IGNORECASE)
+            
+            # Remove Gmail signature block and repair closing tags
+            html_content = re.sub(r'<div[^>]*class="gmail_signature"[^>]*>.*', '</div></body></html>', html_content, flags=re.DOTALL | re.IGNORECASE)
+
         elif part.get_content_maintype() == "image":
             cid = part.get("Content-ID") # get the content-id of the image for unique identification
             if cid:
@@ -39,6 +65,7 @@ def parse_email_and_save(msg):
             f.write(html_content)
         print("Successfully generated index.html and saved images into images/")
 
+
 def main():
     username = os.environ.get("EMAIL_USER")
     app_password = os.environ.get("APP_PASSWORD")
@@ -61,6 +88,7 @@ def main():
         print("No new unread emails found.")
 
     mail.logout()
+
 
 if __name__ == "__main__":
     main()

@@ -23,6 +23,7 @@ jobs:
         env:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+          ALLOWED_SENDERS: ${{ secrets.ALLOWED_SENDERS }}
         run: python fetch_newsletter.py
 
       - name: Commit and push changes
