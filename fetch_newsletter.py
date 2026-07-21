@@ -7,9 +7,15 @@ def get_unread_emails(mail):
     status, messages = mail.search(None, "UNSEEN")
     email_ids = messages[0].split() if messages[0] else []
 
+    if not email_ids:
+        print("DEBUG: 0 unread emails found in inbox. Make sure the email is marked Unread.")
+        return []
+
     # The list of ALLOWED_SENDERS is accessible on the GitHub repository: 
     # Settings > Secrets and Variables > Actions: Repository secrets > ALLOWED_SENDERS
-    allowed_senders = os.environ.get("ALLOWED_SENDERS", "").lower().replace(" ", "").split(",")
+    raw_senders = os.environ.get("ALLOWED_SENDERS", "")
+    allowed_senders = [s.strip(' "\'\n\r') for s in raw_senders.lower().split(",") if s.strip()]
+    print(f"DEBUG: Active allowed senders list: {allowed_senders}")
 
     for e_id in reversed(email_ids):
         status, data = mail.fetch(e_id, '(BODY[HEADER.FIELDS (FROM)])')
@@ -18,10 +24,12 @@ def get_unread_emails(mail):
             if isinstance(response_part, tuple):
                 msg = email.message_from_bytes(response_part[1])
                 from_header = str(msg.get("From", "")).lower()
+                print(f"DEBUG: Checking against email from -> {from_header}")
                 
-                if any(sender in from_header for sender in allowed_senders if sender):
+                if any(sender in from_header for sender in allowed_senders):
                     return [e_id] 
                     
+    print("DEBUG: Unread emails exist, but none matched the allowed senders list.")
     return []
 
 
