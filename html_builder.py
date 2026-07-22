@@ -27,11 +27,14 @@ def clean_email_html(raw_html, image_map, is_archive=False):
 
     # Clean up Gmail's leading <br> tags
     for quote_div in soup.find_all("div", class_="gmail_quote"):
-        for child in list(quote_div.children):
-            if child.name == "br" or (isinstance(child, str) and not child.strip()):
-                child.extract()
-            elif child.name:
+        prev = quote_div.previous_sibling
+        while prev:
+            next_prev = prev.previous_sibling
+            if prev.name == "br" or (isinstance(prev, str) and not prev.strip()):
+                prev.extract()
+            else:
                 break  # stop removing once we reach the actual email content
+            prev = next_prev
 
     # Swap cid (Content-ID) tags for local image paths
     for img in soup.find_all("img"):
