@@ -14,12 +14,9 @@ def clean_email_html(raw_html, image_map, is_archive=False):
 
     if soup.head:
         soup.head.append(stylesheet_tag)
-    elif soup.html:
-        head_tag = soup.new_tag("head")
-        head_tag.append(stylesheet_tag)
-        soup.html.insert(0, head_tag)
     else:
-        soup.insert(0, stylesheet_tag)
+        target = soup.body if soup.body else soup
+        target.insert(0, stylesheet_tag)
 
     # Remove forwarding and signature blocks
     for div in soup.find_all("div", class_=["gmail_attr", "gmail_signature"]):
@@ -27,14 +24,22 @@ def clean_email_html(raw_html, image_map, is_archive=False):
 
     # Clean up Gmail's leading <br> tags
     for quote_div in soup.find_all("div", class_="gmail_quote"):
+        # Remove <br> tags directly before the quote block
         prev = quote_div.previous_sibling
         while prev:
             next_prev = prev.previous_sibling
             if prev.name == "br" or (isinstance(prev, str) and not prev.strip()):
                 prev.extract()
-            else:
-                break  # stop removing once we reach the actual email content
+            elif prev.name:
+                break
             prev = next_prev
+
+        # Remove <br> tags directly inside the top of the quote block
+        for child in list(quote_div.children):
+            if child.name == "br" or (isinstance(child, str) and not child.strip()):
+                child.extract()
+            elif child.name:
+                break
 
     # Swap cid (Content-ID) tags for local image paths
     for img in soup.find_all("img"):
@@ -79,10 +84,8 @@ def generate_newsletter_page(raw_html, image_map, date_str):
         "html.parser",
     )
 
-    if archive_soup.body:
-        archive_soup.body.insert(0, back_nav)
-    else:
-        archive_soup.insert(0, back_nav)
+    target = archive_soup.body if archive_soup.body else archive_soup
+    target.insert(0, back_nav)
 
     with open(f"archive/{date_str}.html", "w", encoding="utf-8") as f:
         f.write(str(archive_soup))
@@ -107,10 +110,8 @@ def generate_newsletter_page(raw_html, image_map, date_str):
     index_soup = clean_email_html(raw_html, image_map, is_archive=False)
     menu_soup = BeautifulSoup(menu_html, "html.parser")
 
-    if index_soup.body:
-        index_soup.body.insert(0, menu_soup)
-    else:
-        index_soup.insert(0, menu_soup)
+    target = index_soup.body if index_soup.body else index_soup
+    target.insert(0, menu_soup)
 
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(str(index_soup))
