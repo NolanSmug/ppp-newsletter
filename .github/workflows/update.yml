@@ -18,13 +18,16 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+          
+      - name: Install dependencies
+        run: pip install beautifulsoup4
 
       - name: Fetch email and generate HTML
         env:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
           ALLOWED_SENDERS: ${{ secrets.ALLOWED_SENDERS }}
-        run: python fetch_newsletter.py
+        run: python main.py
 
       - name: Commit and push changes
         run: |
