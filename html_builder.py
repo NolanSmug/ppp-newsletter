@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 def clean_email_html(raw_html, image_map, is_archive=False):
     soup = BeautifulSoup(raw_html, "html.parser")
 
-    # Injects CSS stylesheet into the HTML <head>
+    # Inject the stylesheet link into the <head>
     css_path = "../style.css" if is_archive else "style.css"
     stylesheet_tag = soup.new_tag("link", rel="stylesheet", href=css_path)
 
@@ -22,6 +22,14 @@ def clean_email_html(raw_html, image_map, is_archive=False):
     # Remove forwarding and signature blocks
     for div in soup.find_all("div", class_=["gmail_attr", "gmail_signature"]):
         div.decompose()
+
+    # Clean up Gmail's leading <br> tags
+    for quote_div in soup.find_all("div", class_="gmail_quote"):
+        for child in list(quote_div.children):
+            if child.name == "br" or (isinstance(child, str) and not child.strip()):
+                child.extract()
+            elif child.name:
+                break  # stop removing once we reach the actual email content
 
     # Swap cid (Content-ID) tags for local image paths
     for img in soup.find_all("img"):
