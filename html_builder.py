@@ -82,7 +82,7 @@ def generate_newsletter_page(raw_html, image_map, date_str):
     back_nav = BeautifulSoup(
         '<div class="archive-nav"><a href="../index.html">&#8592; Back to latest newsletter</a></div>',
         "html.parser",
-    )
+    )  # (&#8592; is unicode left arrow: ←)
 
     target = archive_soup.body if archive_soup.body else archive_soup
     target.insert(0, back_nav)
