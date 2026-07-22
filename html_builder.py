@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 def clean_email_html(raw_html, image_map, is_archive=False):
     soup = BeautifulSoup(raw_html, "html.parser")
 
-    # Inject the stylesheet link into the <head>
+    # Inject the stylesheet link
     css_path = "../style.css" if is_archive else "style.css"
     stylesheet_tag = soup.new_tag("link", rel="stylesheet", href=css_path)
 
@@ -18,6 +18,8 @@ def clean_email_html(raw_html, image_map, is_archive=False):
         head_tag = soup.new_tag("head")
         head_tag.append(stylesheet_tag)
         soup.html.insert(0, head_tag)
+    else:
+        soup.insert(0, stylesheet_tag)
 
     # Remove forwarding and signature blocks
     for div in soup.find_all("div", class_=["gmail_attr", "gmail_signature"]):
@@ -76,6 +78,8 @@ def generate_newsletter_page(raw_html, image_map, date_str):
 
     if archive_soup.body:
         archive_soup.body.insert(0, back_nav)
+    else:
+        archive_soup.insert(0, back_nav)
 
     with open(f"archive/{date_str}.html", "w", encoding="utf-8") as f:
         f.write(str(archive_soup))
@@ -102,6 +106,8 @@ def generate_newsletter_page(raw_html, image_map, date_str):
 
     if index_soup.body:
         index_soup.body.insert(0, menu_soup)
+    else:
+        index_soup.insert(0, menu_soup)
 
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(str(index_soup))
