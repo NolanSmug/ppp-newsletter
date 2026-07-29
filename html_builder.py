@@ -63,7 +63,7 @@ def build_page_soup(raw_html, image_map, is_archive):
 
 
 def extract_and_save_assets(msg, date_str):
-    """Downloads image attachments from the email and saves them locally."""
+    """Downloads image attachments from the email and saves them locally"""
 
     image_map = {}
     os.makedirs("images", exist_ok=True)
