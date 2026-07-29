@@ -2,13 +2,8 @@ import os
 import glob
 from bs4 import BeautifulSoup
 
-# TODO: add docstrings to functions for documentation
 
-
-def clean_email_html(raw_html, image_map, is_archive=False):
-    soup = BeautifulSoup(raw_html, "html.parser")
-
-    # Inject the stylesheet link
+def inject_stylesheet(soup, is_archive):
     css_path = "../style.css" if is_archive else "style.css"
     stylesheet_tag = soup.new_tag("link", rel="stylesheet", href=css_path)
 
@@ -18,13 +13,14 @@ def clean_email_html(raw_html, image_map, is_archive=False):
         target = soup.body if soup.body else soup
         target.insert(0, stylesheet_tag)
 
-    # Remove forwarding and signature blocks
+
+def remove_unwanted_elements(soup):
+    """Strips forwarding blocks, signatures, and Gmail's empty padding tags from the HTML"""
+
     for div in soup.find_all("div", class_=["gmail_attr", "gmail_signature"]):
         div.decompose()
 
-    # Clean up Gmail's leading <br> tags
     for quote_div in soup.find_all("div", class_="gmail_quote"):
-        # Remove <br> tags directly before the quote block
         prev = quote_div.previous_sibling
         while prev:
             next_prev = prev.previous_sibling
@@ -34,26 +30,41 @@ def clean_email_html(raw_html, image_map, is_archive=False):
                 break
             prev = next_prev
 
-        # Remove <br> tags directly inside the top of the quote block
         for child in list(quote_div.children):
             if child.name == "br" or (isinstance(child, str) and not child.strip()):
                 child.extract()
             elif child.name:
                 break
 
-    # Swap cid (Content-ID) tags for local image paths
+
+def update_image_paths(soup, image_map, is_archive):
+    """Replaces inline CID image sources with relative paths to the local images directory"""
+
+    prefix = "../" if is_archive else ""
+
     for img in soup.find_all("img"):
         src = img.get("src", "")
         if src.startswith("cid:"):
             cid = src.replace("cid:", "").strip("<>")
             if cid in image_map:
-                prefix = "../" if is_archive else ""
                 img["src"] = f"{prefix}images/{image_map[cid]}"
+
+
+def build_page_soup(raw_html, image_map, is_archive):
+    """Parses and cleans the raw email HTML into a BeautifulSoup object"""
+
+    soup = BeautifulSoup(raw_html, "html.parser")
+
+    remove_unwanted_elements(soup)
+    update_image_paths(soup, image_map, is_archive)
+    inject_stylesheet(soup, is_archive)
 
     return soup
 
 
-def extract_assets(msg, date_str):
+def extract_and_save_assets(msg, date_str):
+    """Downloads image attachments from the email and saves them locally."""
+
     image_map = {}
     os.makedirs("images", exist_ok=True)
 
@@ -74,31 +85,40 @@ def extract_assets(msg, date_str):
     return image_map
 
 
-def generate_newsletter_page(raw_html, image_map, date_str):
-    os.makedirs("archive", exist_ok=True)
+def prune_old_archives(max_files=5):
+    """Deletes archive HTML and image files beyond the max_files limit"""
 
-    # Generate and save the archive version
-    archive_soup = clean_email_html(raw_html, image_map, is_archive=True)
-    back_nav = BeautifulSoup(
-        '<div class="archive-nav"><a href="../index.html">&#8592; Back to latest newsletter</a></div>',
-        "html.parser",
-    )  # (&#8592; is unicode left arrow: ←)
-
-    target = archive_soup.body if archive_soup.body else archive_soup
-    target.insert(0, back_nav)
-
-    with open(f"archive/{date_str}.html", "w", encoding="utf-8") as f:
-        f.write(str(archive_soup))
-
-    # Prune files older than 5 newsletters
     archives = sorted(glob.glob("archive/*.html"), reverse=True)
-    for old_file in archives[5:]:
+
+    for old_file in archives[max_files:]:
         old_date = os.path.basename(old_file).replace(".html", "")
         for old_img in glob.glob(f"images/{old_date}-*"):
             os.remove(old_img)
         os.remove(old_file)
 
-    # Generate main index.html
+
+def generate_archive_file(raw_html, image_map, date_str):
+    """Builds and saves the historical version of the newsletter with a back link"""
+
+    soup = build_page_soup(raw_html, image_map, is_archive=True)
+    back_nav = BeautifulSoup(
+        '<div class="archive-nav"><a href="../index.html">&#8592; Back to latest newsletter</a></div>',
+        "html.parser",
+    )
+
+    target = soup.body if soup.body else soup
+    target.insert(0, back_nav)
+
+    os.makedirs("archive", exist_ok=True)
+    with open(f"archive/{date_str}.html", "w", encoding="utf-8") as f:
+        f.write(str(soup))
+
+
+def generate_index_file(raw_html, image_map):
+    """Builds and saves the main index.html "home" newsletter with the previous newsletters menu"""
+
+    soup = build_page_soup(raw_html, image_map, is_archive=False)
+
     archives = sorted(glob.glob("archive/*.html"), reverse=True)
     links = [
         f'<a href="archive/{os.path.basename(arch)}">{os.path.basename(arch).replace(".html", "")}</a>'
@@ -107,11 +127,15 @@ def generate_newsletter_page(raw_html, image_map, date_str):
     menu_links = " | ".join(links) if links else "<em>No previous newsletters yet.</em>"
     menu_html = f'<div class="archive-menu"><strong>Previous Newsletters:</strong><br>{menu_links}</div>'
 
-    index_soup = clean_email_html(raw_html, image_map, is_archive=False)
     menu_soup = BeautifulSoup(menu_html, "html.parser")
-
-    target = index_soup.body if index_soup.body else index_soup
+    target = soup.body if soup.body else soup
     target.insert(0, menu_soup)
 
     with open("index.html", "w", encoding="utf-8") as f:
-        f.write(str(index_soup))
+        f.write(str(soup))
+
+
+def generate_website(raw_html, image_map, date_str):
+    generate_archive_file(raw_html, image_map, date_str)
+    prune_old_archives(max_files=5)
+    generate_index_file(raw_html, image_map)
