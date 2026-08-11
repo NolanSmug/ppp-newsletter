@@ -1,4 +1,4 @@
-# Ping Pong Parkinson Newsletter Relay Host
+# Ping Pong Parkinson newsletter relay host
 
 This is the host for the PingPongParkinson® NYC website's [newsletter page](https://www.pingpongnyc.org/newsletter)
 
