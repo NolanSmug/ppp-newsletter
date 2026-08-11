@@ -36,6 +36,9 @@ def remove_unwanted_elements(soup):
             elif child.name:
                 break
 
+    for tag in soup(["script", "iframe", "object", "embed", "applet", "link", "meta"]):
+        tag.decompose()
+
 
 def update_image_paths(soup, image_map, is_archive):
     """Replaces inline CID image sources with relative paths to the local images directory"""
