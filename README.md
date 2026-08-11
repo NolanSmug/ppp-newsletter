@@ -12,7 +12,7 @@ This repository holds a Python automation pipeline that fetches the latest newsl
 The generated GitHub Pages site is embedded directly into the PingPongParkinsonÂ® NYC Squarespace site using this code block:
 
 ```html
-<iframe src="[https://nolansmug.github.io/ppp-newsletter/](https://nolansmug.github.io/ppp-newsletter/)" width="100%" height="1200px" style="border:none; overflow:hidden;"></iframe>
+<iframe src="https://nolansmug.github.io/ppp-newsletter/" width="100%" height="1200px" style="border:none; overflow:hidden;"></iframe>
 ```
 
 ### Architecture
@@ -20,7 +20,7 @@ The generated GitHub Pages site is embedded directly into the PingPongParkinsonÂ
 - [main.py](main.py): The entry point. Manages fetching the email and generating the webpage.
 - [email_fetcher.py](email_fetcher.py): Handles the IMAP connection to the relay email's inbox, validates the sender, and returns the HTML content and sent date from the latest unread message.
 - [html_builder.py](html_builder.py): Cleans Gmail message's raw HTML, collects the related images, generates the main `index.html`, and manages the `archive/` directory.
-- [archive](./archive/)`: Directory that stores the generated HTML files for the recent past newsletters.
+- [archive](./archive/): Directory that stores the generated HTML files for the recent past newsletters.
 - [images](./images/): Directory where inline image attachments downloaded from the emails are saved so they can be hosted locally.
 
 #### Dependencies
@@ -33,6 +33,8 @@ The pipeline requires three repository secrets to run. Configure these in GitHub
 - `EMAIL_USER`: The email address of the relay account.
 - `APP_PASSWORD`: The 16-character Google App Password for the relay account.
 - `ALLOWED_SENDERS`: A comma-separated list of authorized sender emails (ex: sender1@example.com, sender2@example.com).
+
+Need access? The `APP_PASSWORD` cannot be viewed once created. For access to the relay Google account, change allowed senders, or for other technical inquiries, contact the developer at [nolangcyr@gmail.com](mailto:nolangcyr@gmail.com)
 
 ### Pipeline and deployment
 

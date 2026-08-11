@@ -1,7 +1,7 @@
 import os
 import imaplib
 import email
-from email.utils import parsedate_to_datetime
+from email.utils import parseaddr, parsedate_to_datetime
 
 
 def connect_to_mailbox():
@@ -31,8 +31,8 @@ def is_sender_allowed(mail, email_id, allowed_senders):
     for response_part in header_data:
         if isinstance(response_part, tuple):
             header_msg = email.message_from_bytes(response_part[1])
-            from_header = str(header_msg.get("From", "")).lower()
-            if any(sender in from_header for sender in allowed_senders):
+            _, from_address = parseaddr(str(header_msg.get("From", "")))
+            if from_address.lower() in allowed_senders:
                 return True
 
     return False

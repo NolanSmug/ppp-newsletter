@@ -125,7 +125,7 @@ def generate_index_file(raw_html, image_map):
         for arch in archives[1:]
     ]
     menu_links = " | ".join(links) if links else "<em>No previous newsletters yet.</em>"
-    menu_html = f'<div class="archive-menu"><strong>Previous Newsletters:</strong><br>{menu_links}</div>'
+    menu_html = f'<div class="archive-menu"><strong>Previous newsletters:</strong><br>{menu_links}</div>'
 
     menu_soup = BeautifulSoup(menu_html, "html.parser")
     target = soup.body if soup.body else soup
