@@ -2,6 +2,8 @@ import os
 import glob
 from bs4 import BeautifulSoup
 
+MAX_ARCHIVE_FILES = 10  # The number of past newsletters to keep. Older files are deleted.
+
 
 def inject_stylesheet(soup, is_archive):
     css_path = "../style.css" if is_archive else "style.css"
@@ -40,6 +42,29 @@ def remove_unwanted_elements(soup):
         tag.decompose()
 
 
+def use_html5_structure(soup):
+    """Ensures the soup has a standard HTML5 structure, avoiding duplicates if tags exist"""
+
+    if soup.find("html") and soup.find("body"):
+        return  # already valid HTML5
+
+    doctype = BeautifulSoup("<!DOCTYPE html>", "html.parser")
+    html_tag = soup.new_tag("html")
+    head_tag = soup.new_tag("head")
+    meta_tag = soup.new_tag("meta", charset="utf-8")
+    body_tag = soup.new_tag("body")
+
+    head_tag.append(meta_tag)
+    html_tag.append(head_tag)
+    html_tag.append(body_tag)
+
+    for element in list(soup.contents):
+        body_tag.append(element.extract())
+
+    soup.append(doctype)
+    soup.append(html_tag)
+
+
 def update_image_paths(soup, image_map, is_archive):
     """Replaces inline CID image sources with relative paths to the local images directory"""
 
@@ -58,6 +83,7 @@ def build_page_soup(raw_html, image_map, is_archive):
 
     soup = BeautifulSoup(raw_html, "html.parser")
 
+    use_html5_structure(soup)
     remove_unwanted_elements(soup)
     update_image_paths(soup, image_map, is_archive)
     inject_stylesheet(soup, is_archive)
@@ -88,7 +114,7 @@ def extract_and_save_assets(msg, date_str):
     return image_map
 
 
-def prune_old_archives(max_files=5):
+def prune_old_archives(max_files=MAX_ARCHIVE_FILES):
     """Deletes archive HTML and image files beyond the max_files limit"""
 
     archives = sorted(glob.glob("archive/*.html"), reverse=True)
@@ -140,5 +166,5 @@ def generate_index_file(raw_html, image_map):
 
 def generate_website(raw_html, image_map, date_str):
     generate_archive_file(raw_html, image_map, date_str)
-    prune_old_archives(max_files=5)
+    prune_old_archives()
     generate_index_file(raw_html, image_map)
